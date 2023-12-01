@@ -5,8 +5,7 @@
     "description": "Checks the safety of links on web pages",
     "permissions": [
         "activeTab",
-        "scripting",
-        "https://safebrowsing.googleapis.com/*"
+        "scripting"
     ],
     "action": {
         "default_popup": "popup.html",

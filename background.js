@@ -1,46 +1,53 @@
-const API_KEY = 'AIzaSyB4ZDi-HGpt1IQ-SmdrSbmZA4fjtRShOE8';
-const API_URL = 'https://safebrowsing.googleapis.com/v4/threatMatches:find?key=' + API_KEY;
 
-// Function to check URLs with the Google Safe Browsing API
-function checkUrlSafety(urls, callback) {
-    // Define the request body
-    let requestBody = {
-        client: {
-            clientId: "niidadbpobgjgfpmgkoodenblopeodcj",
-            clientVersion: "1.0"
-        },
-        threatInfo: {
-            threatTypes: ["MALWARE", "SOCIAL_ENGINEERING"],
-            platformTypes: ["WINDOWS"],
-            threatEntryTypes: ["URL"],
-            threatEntries: urls.map(url => ({url: url}))
-        }
-    };
+//API Connection
+const API_URL = 'https://safebrowsing.googleapis.com/v4/threatMatches:find?key=AIzaSyB4ZDi-HGpt1IQ-SmdrSbmZA4fjtRShOE8';
 
-    // Make the API request
-    fetch(API_URL, {
-        method: 'POST',
-        body: JSON.stringify(requestBody),
-        headers: { 'Content-Type': 'application/json' }
-    })
-    .then(response => response.json())
-    .then(data => {
-        const resultsArray = data.matches || []; // Assuming the API response has a 'matches' array
-        callback(resultsArray);
-    })
-    .catch(error => {
-        console.error('Error checking URL safety:', error);
-        callback([]);
+function checkUrlSafety(urls) {
+    return new Promise((resolve, reject) => {
+        let requestBody = {
+            client: {
+                clientId: "your_client_id", // Replace with your actual client ID
+                clientVersion: "1.0"
+            },
+            threatInfo: {
+                threatTypes: ["MALWARE", "SOCIAL_ENGINEERING"],
+                platformTypes: ["WINDOWS"],
+                threatEntryTypes: ["URL"],
+                threatEntries: urls.map(url => ({url: url}))
+            }
+        };
+
+        fetch(API_URL, {
+            method: 'POST',
+            body: JSON.stringify(requestBody),
+            headers: { 'Content-Type': 'application/json' }
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok: ' + response.statusText);
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log('API Response:', data); // Log the successful API response
+            resolve(data.matches || []);
+        })
+        .catch(error => {
+            console.error('Error checking URL safety:', error);
+            reject(error); // Reject the promise with the error
+        });
+
+        // Optional: Set a timeout for the API call
+        setTimeout(() => reject(new Error('Request timeout')), 10000); // 10 seconds timeout
     });
 }
 
-// Listen for messages from content script
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-    if (request.action === "extractAndCheckUrls") {
-        checkUrlSafety(request.urls, (result) => {
-            sendResponse({safeBrowsingResult: result});
-        });
+    if (request.action === "checkUrls") {
+        checkUrlSafety(request.urls)
+            .then(result => sendResponse({safeBrowsingResult: result}))
+            .catch(error => sendResponse({error: error.message}));
+
         return true; // Indicate that response will be sent asynchronously
     }
 });
-

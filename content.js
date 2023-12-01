@@ -1,13 +1,3 @@
-chrome.runtime.onMessage.addListener(function(request, sender, sendResponse){
-    if (request.action === "extractAndCheckUrls") {
-        const urls = extractUrls();
-        if (urls.length > 0) {
-            chrome.runtime.sendMessage({action: "checkUrls", urls: urls}, sendResponse);
-        }
-        return true; // Indicates an asynchronous response
-    }
-});
-
 function extractUrls() {
     const urls = new Set();
     const anchors = document.getElementsByTagName('a');
@@ -23,18 +13,27 @@ function extractUrls() {
 function checkUrlsSafety(urls) {
     chrome.runtime.sendMessage({action: "checkUrls", urls: urls}, response => {
         if (response && response.safeBrowsingResult) {
-            // Handle the response here. You can, for example, mark unsafe links on the page.
+            // Handle the response here.
             console.log('Safety Check Results:', response.safeBrowsingResult);
         } else {
             console.error('Error in getting safety check results');
         }
     });
 }
-
-// Extract and check URLs when the page is loaded
 window.addEventListener('load', () => {
     const urls = extractUrls();
     if (urls.length > 0) {
         checkUrlsSafety(urls);
+    }
+});
+chrome.runtime.onMessage.addListener(function(request, sender, sendResponse){
+    if (request.action === "checkUrls") {
+        const urls = extractUrls();
+        if (urls.length > 0) {
+            chrome.runtime.sendMessage({action: "checkUrls", urls: urls}, sendResponse);
+        } else {
+            sendResponse({}); // Send empty response if no URLs
+        }
+        return true; // Asynchronous response or else it will break!
     }
 });

@@ -23,7 +23,7 @@ document.addEventListener('DOMContentLoaded', function () {
         if (safeBrowsingResult.length > 0) {
             safeBrowsingResult.forEach(result => {
                 const urlElement = document.createElement('p');
-                urlElement.textContent = result.url + ' - ' + (result.safe ? 'Safe' : 'Unsafe');
+                urlElement.textContent = result.url + ' - ' + (result.safe ? 'Safe' : 'Unsafe'); // Safe does not work and breaks code
                 urlElement.className = result.safe ? 'safe' : 'unsafe';
                 statusDiv.appendChild(urlElement);
             });
@@ -34,16 +34,30 @@ document.addEventListener('DOMContentLoaded', function () {
 
     checkButton.addEventListener('click', function () {
         setLoading(true);
-
+    
         chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
-            chrome.tabs.sendMessage(tabs[0].id, {action: "extractAndCheckUrls"}, function(response) {
+            if (!tabs[0]) {
                 setLoading(false);
-                if (response && response.safeBrowsingResult) {
+                return; // Exit if no active tab
+            }
+    
+            chrome.tabs.sendMessage(tabs[0].id, {action: "checkUrls"}, function(response) {
+                if (chrome.runtime.lastError) {
+                    // Handle message sending error
+                    console.error(chrome.runtime.lastError.message);
+                    statusDiv.innerHTML = '<p>Error occurred.</p>';
+                    setLoading(false);
+                    return;
+                }
+    
+                // Handle the response
+                if (response && Array.isArray(response.safeBrowsingResult)) {
                     updateResults(response.safeBrowsingResult);
                 } else {
-                    statusDiv.innerHTML = '<p>Error occurred.</p>';
+                    statusDiv.innerHTML = '<p>Error occurred or no results.</p>';
                 }
+                setLoading(false);
             });
         });
-    });
+    });    
 });
