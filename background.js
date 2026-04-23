@@ -1,6 +1,5 @@
 
 //API Connection
-const API_URL = 'https://safebrowsing.googleapis.com/v4/threatMatches:find?key=AIzaSyB4ZDi-HGpt1IQ-SmdrSbmZA4fjtRShOE8';
 
 function checkUrlSafety(urls) {
     return new Promise((resolve, reject) => {
